@@ -1,0 +1,426 @@
+-- SkyCheat UI Library
+-- Par Z.ai, basé sur le design de l'utilisateur
+
+local Library = {}
+
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+-- Fonctions utilitaires
+local function create(className)
+    return Instance.new(className)
+end
+
+local function rgb(r,g,b)
+    return Color3.fromRGB(r,g,b)
+end
+
+local function dim2(xScale, xOffset, yScale, yOffset)
+    return UDim2.new(xScale, xOffset, yScale, yOffset)
+end
+
+local function dimOff(xOffset, yOffset)
+    return UDim2.fromOffset(xOffset, yOffset)
+end
+
+-- Fonction principale pour créer une fenêtre
+function Library:Window(options)
+    local self = setmetatable({}, {__index = Library})
+    
+    -- Création des éléments principaux (ScreenGui, Frame, TopBar, etc.)
+    -- en se basant sur votre design original
+    self.Gui = create("ScreenGui")
+    self.Gui.Name = options.Name or "plaguecheat.cc"
+    self.Gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    self.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    self.MainFrame = create("Frame")
+    self.MainFrame.Parent = self.Gui
+    self.MainFrame.BackgroundColor3 = rgb(15, 15, 15)
+    self.MainFrame.BorderColor3 = rgb(0, 0, 0)
+    self.MainFrame.BorderSizePixel = 0
+    self.MainFrame.Position = dim2(0.281, 0, 0.217, 0)
+    self.MainFrame.Size = dimOff(692, 469)
+
+    self.TopBar = create("TextLabel")
+    self.TopBar.Name = "TopBar"
+    self.TopBar.Parent = self.MainFrame
+    self.TopBar.BackgroundColor3 = rgb(25, 25, 25)
+    self.TopBar.BorderColor3 = rgb(0, 0, 0)
+    self.TopBar.BorderSizePixel = 0
+    self.TopBar.Position = dim2(0, 0, -0.053, 0)
+    self.TopBar.Size = dimOff(692, 25)
+    self.TopBar.Font = Enum.Font.SourceSans
+    self.TopBar.Text = "  " .. (options.Title or "Skycheat.cc - email.bomber#0")
+    self.TopBar.TextColor3 = rgb(255, 255, 255)
+    self.TopBar.TextSize = 14
+    self.TopBar.TextXAlignment = Enum.TextXAlignment.Left
+
+    local trace = create("Frame")
+    trace.Name = "trace"
+    trace.Parent = self.TopBar
+    trace.BackgroundColor3 = rgb(62, 124, 186)
+    trace.BorderSizePixel = 0
+    trace.Position = dim2(0, 0, 1, 0)
+    trace.Size = dimOff(692, 1)
+
+    -- Création des boutons d'onglets
+    self.TabButtons = {}
+    local tabNames = {"Rage", "Visuals", "Skins", "Misc"}
+    local tabPositions = {0.783, 0.833, 0.894, 0.942}
+    for i, name in ipairs(tabNames) do
+        local btn = create("TextButton")
+        btn.Name = name.."Tabs"
+        btn.Parent = self.TopBar
+        btn.BackgroundTransparency = 1
+        btn.BorderSizePixel = 0
+        btn.Position = dim2(tabPositions[i], 0, 0.08, 0)
+        btn.Size = dimOff(name == "Visuals" and 42 or 35, 21)
+        btn.Font = Enum.Font.SourceSans
+        btn.Text = name
+        btn.TextColor3 = i == 1 and rgb(255,255,255) or rgb(130,130,130) -- Le premier onglet est actif
+        btn.TextSize = 14
+        self.TabButtons[name] = btn
+    end
+    
+    -- Conteneur pour le contenu des onglets
+    self.TabContent = create("Frame")
+    self.TabContent.Name = "TabContent"
+    self.TabContent.Parent = self.MainFrame
+    self.TabContent.BackgroundTransparency = 1
+    self.TabContent.Position = dimOff(7, 7) -- Ajusté pour correspondre à la position des sections
+    self.TabContent.Size = dimOff(678, 455) -- Ajusté pour la taille interne
+
+    self.Tabs = {}
+    self.CurrentTab = nil
+
+    -- Logique de déplacement de la fenêtre
+    local dragging = false
+    local dragStart, startPos
+
+    self.TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = self.MainFrame.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            self.MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    -- Logique pour afficher/masquer avec la touche E
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.E then
+            self.Gui.Enabled = not self.Gui.Enabled
+        end
+    end)
+
+    -- Création du compteur FPS
+    local fpsFrame = create("Frame")
+    fpsFrame.Name = "FrameFps"
+    fpsFrame.Parent = self.Gui
+    fpsFrame.BackgroundColor3 = rgb(25, 25, 25)
+    fpsFrame.BorderColor3 = rgb(0, 0, 0)
+    fpsFrame.BorderSizePixel = 0
+    fpsFrame.Position = dim2(0.015, 0, 0.033, 0)
+    fpsFrame.Size = dimOff(138, 23)
+
+    local fpsTrace = create("Frame")
+    fpsTrace.Name = "trace"
+    fpsTrace.Parent = fpsFrame
+    fpsTrace.BackgroundColor3 = rgb(62, 124, 186)
+    fpsTrace.BorderSizePixel = 0
+    fpsTrace.Position = dim2(0, 0, -0.047, 0)
+    fpsTrace.Size = dimOff(138, 1)
+
+    local fpsLabel = create("TextLabel")
+    fpsLabel.Parent = fpsFrame
+    fpsLabel.BackgroundTransparency = 1
+    fpsLabel.Position = dimOff(0, 6)
+    fpsLabel.Size = dimOff(138, 10)
+    fpsLabel.Font = Enum.Font.SourceSans
+    fpsLabel.Text = "  SkyCheat.cc | fps : 0"
+    fpsLabel.TextColor3 = rgb(255, 255, 255)
+    fpsLabel.TextSize = 14
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local lastTime = tick()
+    RunService.Heartbeat:Connect(function()
+        local currentTime = tick()
+        local fps = math.floor(1 / (currentTime - lastTime))
+        lastTime = currentTime
+        fpsLabel.Text = "  SkyCheat.cc | fps : " .. fps
+    end)
+
+    return self
+end
+
+-- Fonction pour créer un onglet
+function Library:Tab(options)
+    local tabName = options.Name
+    local tabButton = self.TabButtons[tabName]
+    if not tabButton then error("Tab name '"..tostring(tabName).."' not found in TopBar.") end
+    
+    local contentFrame = create("Frame")
+    contentFrame.Name = tabName.."Content"
+    contentFrame.Parent = self.TabContent
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Size = UDim2.new(1, 0, 1, 0)
+    contentFrame.Visible = false
+
+    local tab = {
+        Name = tabName,
+        Content = contentFrame,
+        Columns = {},
+        CurrentY = 0
+    }
+
+    -- Logique de changement d'onglet
+    tabButton.MouseButton1Click:Connect(function()
+        -- Masquer l'ancien onglet
+        if self.CurrentTab then
+            self.Tabs[self.CurrentTab].Content.Visible = false
+            self.TabButtons[self.CurrentTab].TextColor3 = rgb(130,130,130)
+        end
+        -- Afficher le nouvel onglet
+        contentFrame.Visible = true
+        tabButton.TextColor3 = rgb(255,255,255)
+        self.CurrentTab = tabName
+    end)
+
+    self.Tabs[tabName] = tab
+    
+    -- Si c'est le premier onglet créé, l'afficher par défaut
+    if not self.CurrentTab then
+        contentFrame.Visible = true
+        self.CurrentTab = tabName
+    end
+
+    -- Fonction pour ajouter une colonne (section)
+    function tab:Column(options)
+        local column = create("Frame")
+        column.Name = "Column"
+        column.Parent = self.Content
+        column.BackgroundColor3 = rgb(25, 25, 25)
+        column.BorderColor3 = rgb(0,0,0)
+        column.BorderSizePixel = 0
+        column.Size = UDim2.new(0.5, -5, 1, 0)
+        column.Position = #self.Columns == 0 and dimOff(0,0) or dim2(0.5, 5, 0, 0)
+
+        local columnApi = {
+            Frame = column,
+            CurrentY = 25 -- Laisser de la place pour le titre de la section
+        }
+
+        function columnApi:Section(options)
+            local sectionName = options.Name
+            local sectionLabel = create("TextLabel")
+            sectionLabel.Name = "SectionText"
+            sectionLabel.Parent = column
+            sectionLabel.BackgroundTransparency = 1
+            sectionLabel.Position = dimOff(0, 0)
+            sectionLabel.Size = dimOff(100, 21)
+            sectionLabel.Font = Enum.Font.SourceSans
+            sectionLabel.Text = sectionName
+            sectionLabel.TextColor3 = rgb(130, 130, 130)
+            sectionLabel.TextSize = 14
+            sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+            columnApi.CurrentY = columnApi.CurrentY + 25
+            return columnApi
+        end
+
+        function columnApi:Toggle(options)
+            local toggle = create("TextButton")
+            toggle.Name = "checkbox"
+            toggle.Parent = column
+            toggle.BackgroundColor3 = rgb(25, 25, 25)
+            toggle.BorderColor3 = rgb(54, 54, 54)
+            toggle.Position = dimOff(10, columnApi.CurrentY)
+            toggle.Size = dimOff(12, 12)
+            toggle.Font = Enum.Font.SourceSans
+            toggle.Text = ""
+            toggle.AutoButtonColor = false
+
+            local label = create("TextLabel")
+            label.Parent = toggle
+            label.BackgroundTransparency = 1
+            label.Position = dimOff(20, 0)
+            label.Size = dimOff(80, 12)
+            label.Font = Enum.Font.SourceSans
+            label.Text = options.Name
+            label.TextColor3 = rgb(255, 255, 255)
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local state = options.Default or false
+            if state then
+                toggle.BackgroundColor3 = rgb(62, 124, 186)
+            end
+
+            toggle.MouseButton1Click:Connect(function()
+                state = not state
+                toggle.BackgroundColor3 = state and rgb(62, 124, 186) or rgb(25, 25, 25)
+                if options.Callback then
+                    options.Callback(state)
+                end
+            end)
+            columnApi.CurrentY = columnApi.CurrentY + 20
+            return { OnChange = function(f) options.Callback = f end }
+        end
+
+        function columnApi:Slider(options)
+            local sliderFrame = create("Frame")
+            sliderFrame.Name = "Slider"
+            sliderFrame.Parent = column
+            sliderFrame.BackgroundTransparency = 1
+            sliderFrame.Position = dimOff(10, columnApi.CurrentY)
+            sliderFrame.Size = dimOff(250, 30)
+
+            local label = create("TextLabel")
+            label.Parent = sliderFrame
+            label.BackgroundTransparency = 1
+            label.Position = dimOff(0, 0)
+            label.Size = dimOff(80, 12)
+            label.Font = Enum.Font.SourceSans
+            label.Text = options.Name
+            label.TextColor3 = rgb(255, 255, 255)
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local valueLabel = create("TextLabel")
+            valueLabel.Parent = sliderFrame
+            valueLabel.BackgroundTransparency = 1
+            valueLabel.Position = dimOff(200, 0)
+            valueLabel.Size = dimOff(50, 12)
+            valueLabel.Font = Enum.Font.SourceSans
+            valueLabel.Text = tostring(options.Default or options.Min)
+            valueLabel.TextColor3 = rgb(255, 255, 255)
+            valueLabel.TextSize = 14
+            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+            
+            local sliderTrack = create("TextButton")
+            sliderTrack.Name = "SliderHandle"
+            sliderTrack.Parent = sliderFrame
+            sliderTrack.BackgroundColor3 = rgb(62, 124, 186)
+            sliderTrack.BorderSizePixel = 0
+            sliderTrack.Position = dimOff(0, 20)
+            sliderTrack.Size = dimOff(198, 6)
+            sliderTrack.AutoButtonColor = false
+            sliderTrack.Text = ""
+
+            local sliderHandle = create("TextButton")
+            sliderHandle.Name = "Handle"
+            sliderHandle.Parent = sliderTrack
+            sliderHandle.BackgroundColor3 = rgb(255,255,255)
+            sliderHandle.BorderSizePixel = 0
+            sliderHandle.Size = dimOff(8, 12)
+            sliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
+            sliderHandle.Position = dimOff(0, 3)
+            sliderHandle.AutoButtonColor = false
+            sliderHandle.Text = ""
+
+            local min, max = options.Min or 0, options.Max or 100
+            local defaultValue = options.Default or min
+            local value = defaultValue
+            local decimal = options.Decimal or 1
+
+            local function updateSlider(val)
+                value = math.floor(val / decimal) * decimal
+                value = math.clamp(value, min, max)
+                local percent = (value - min) / (max - min)
+                sliderHandle.Position = dimOff(sliderTrack.AbsoluteSize.X * percent, 3)
+                valueLabel.Text = string.format("%.2f", value)
+                if options.Callback then options.Callback(value) end
+            end
+            
+            updateSlider(defaultValue)
+
+            local draggingSlider = false
+            sliderHandle.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSlider = true
+                end
+            end)
+            sliderTrack.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSlider = true
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local percent = (mousePos.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X
+                    updateSlider(min + percent * (max - min))
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(input)
+                if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local percent = (mousePos.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X
+                    updateSlider(min + percent * (max - min))
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSlider = false
+                end
+            end)
+
+            columnApi.CurrentY = columnApi.CurrentY + 40
+            return { OnChange = function(f) options.Callback = f end }
+        end
+
+        function columnApi:Button(options)
+            local button = create("TextButton")
+            button.Parent = column
+            button.BackgroundColor3 = rgb(25, 25, 25)
+            button.BorderColor3 = rgb(62, 124, 186)
+            button.Position = dimOff(10, columnApi.CurrentY)
+            button.Size = dimOff(231, 31)
+            button.Font = Enum.Font.SourceSans
+            button.Text = options.Name
+            button.TextColor3 = rgb(255, 255, 255)
+            button.TextSize = 14
+            
+            button.MouseButton1Click:Connect(function()
+                if options.Callback then
+                    options.Callback()
+                end
+            end)
+            columnApi.CurrentY = columnApi.CurrentY + 40
+        end
+
+        function columnApi:Label(options)
+            local label = create("TextLabel")
+            label.Parent = column
+            label.BackgroundTransparency = 1
+            label.Position = dimOff(10, columnApi.CurrentY)
+            label.Size = dimOff(200, 14)
+            label.Font = Enum.Font.SourceSans
+            label.Text = options.Name
+            label.TextColor3 = rgb(255, 255, 255)
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            columnApi.CurrentY = columnApi.CurrentY + 20
+        end
+
+        table.insert(self.Columns, columnApi)
+        return columnApi
+    end
+
+    return tab
+end
+
+return Library
